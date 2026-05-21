@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signing in to Syncsheet…</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <p>Redirecting back to the app…</p>
+  <script>
+    const p = new URLSearchParams(window.location.search);
+    const code = p.get('code');
+    if (code) {
+      window.location.href = 'syncsheet://auth?' + window.location.search.substring(1);
+    } else {
+      document.body.innerHTML = '<p style="color:red;font-family:sans-serif">Authentication error: '
+        + (p.get('error') || 'No code returned')
+        + '<br><br>Please close this tab and try again.</p>';
+    }
+  </script>
+</body>
+</html>
