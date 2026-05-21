@@ -1,81 +1,25 @@
 # syncsheet
 
-OAuth redirect handler for **myM-Pesa Ledger** — a lightweight GitHub Pages page that receives the Smartsheet OAuth callback and forwards the auth code back to the app via deep link.
+OAuth redirect handler for **myM-Pesa Ledger**.
 
-## How it works
+## What it does
 
-1. User taps **Log in with Smartsheet** in the app
-2. A Chrome Custom Tab opens Smartsheet's OAuth consent page
-3. After the user approves, Smartsheet redirects to this page:
+Smartsheet's OAuth flow requires an HTTPS redirect URI — it won't redirect directly to a mobile app's custom scheme (`mpesatracker://`). This page acts as a lightweight bridge:
+
+1. Smartsheet redirects here after the user approves access:
    ```
-   https://neuralquantam.github.io/mpesa-auth/?code=XXX&state=YYY
+   https://neuralquantam.github.io/syncsheet/?code=XXX&state=YYY
    ```
-4. The page's JavaScript immediately redirects the browser to:
+2. The page immediately forwards to the app's deep link:
    ```
    mpesatracker://auth?code=XXX&state=YYY
    ```
-5. Android intercepts the `mpesatracker://` deep link, closes the browser tab, and returns the code to the app
-6. The app exchanges the code for an access token and begins setup
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `index.html` | The redirect page — reads `?code=` from the URL and forwards to the app deep link |
-
-## Setup
-
-### 1. Create the repo
-
-Create a **public** GitHub repository named `mpesa-auth` under the `NeuralQuantam` account.
-
-### 2. Add index.html
-
-Create `index.html` in the repo root:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Signing in to M-Pesa Ledger…</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-  <p>Redirecting back to the app…</p>
-  <script>
-    const p = new URLSearchParams(window.location.search);
-    const code = p.get('code');
-    if (code) {
-      window.location.href = 'mpesatracker://auth?' + window.location.search.substring(1);
-    } else {
-      document.body.innerHTML = '<p style="color:red;font-family:sans-serif">Authentication error: '
-        + (p.get('error') || 'No code returned')
-        + '<br><br>Please close this tab and try again.</p>';
-    }
-  </script>
-</body>
-</html>
-```
-
-### 3. Enable GitHub Pages
-
-Go to **Settings → Pages → Source: Deploy from branch → main / root** and save. The page will be live at `https://neuralquantam.github.io/mpesa-auth/` within a couple of minutes.
-
-### 4. Register the redirect URI in Smartsheet
-
-In the [Smartsheet Developer Portal](https://developers.smartsheet.com/), set the **App Redirect URL** for your app to:
-
-```
-https://neuralquantam.github.io/mpesa-auth/
-```
-
-> The trailing slash is required — Smartsheet performs an exact match.
+3. Android intercepts the deep link, closes the browser tab, and hands the auth code back to the app to complete sign-in.
 
 ## Registered redirect URI
 
 ```
-https://neuralquantam.github.io/mpesa-auth/
+https://neuralquantam.github.io/syncsheet/
 ```
 
 ## App deep link scheme
@@ -83,14 +27,3 @@ https://neuralquantam.github.io/mpesa-auth/
 ```
 mpesatracker://auth
 ```
-
-Defined in `app.json` → `"scheme": "mpesatracker"` and registered in `AndroidManifest.xml` via an intent filter for the `mpesatracker` scheme.
-
-## Troubleshooting
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Page shows "Authentication error: No code returned" | Smartsheet redirect URI mismatch | Confirm the URI in the developer portal matches exactly, including the trailing slash |
-| Page loads but app doesn't open | `mpesatracker://` intent filter missing | Ensure `AndroidManifest.xml` has `<data android:scheme="mpesatracker"/>` in an intent filter on `MainActivity` |
-| "invalid_client" on the Smartsheet login page | Wrong client ID | Check `SS_CLIENT_ID` in `src/utils/smartsheet.ts` |
-| App receives `state mismatch` error | State parameter not passed through | Confirm the `index.html` uses `window.location.search.substring(1)` to forward all params unchanged |
