@@ -11,7 +11,7 @@
     const p = new URLSearchParams(window.location.search);
     const code = p.get('code');
     if (code) {
-      window.location.href = 'syncsheet://auth?' + window.location.search.substring(1);
+      window.location.href = 'sheetsync://auth?' + window.location.search.substring(1);
     } else {
       document.body.innerHTML = '<p style="color:red;font-family:sans-serif">Authentication error: '
         + (p.get('error') || 'No code returned')
